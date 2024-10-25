@@ -1,0 +1,44 @@
+name: mpv-vulkan
+
+on:
+  workflow_dispatch:
+
+env:
+  CC: clang
+  CXX: clang
+
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - os: macos-15-arm64
+    runs-on: ${{ matrix.config.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install basic tools
+        run: |
+          brew install meson dylibbundler
+
+      - name: Build mpv
+        run: |
+          set -x
+          ./build.sh
+          tar -cavf mpv.app.tar.xz mpv.app
+        
+      - name: Get Wine package path
+        run: |
+          set -x
+          echo "APPPATH=$(realpath mpv.app.tar.xz)" >> $GITHUB_ENV
+
+      - name: Upload mpv
+        uses: actions/upload-artifact@v3
+        with:
+          name: mpv.${{ matrix.config.os }}.tar.xz
+          path: ${{ env.APPPATH }}
